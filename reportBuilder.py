@@ -19,4 +19,27 @@ def dataOfTable(tableName,column_dict):
     for row in results:
         result.append(row)
     return result
+
+def viewData(tableName,column_dict,groupBy,sum1,sum2):
+    result=[]
+    var=str(tableName)
+# Build the SELECT statement based on the dictionary values
+# Execute the query and print the results
+    
+    group_by_column =str(groupBy)
+    var1=str(sum1)
+# Build the GROUP BY query
+    if group_by_column in ['customer_name','price', 'region', 'date']:
+        query = ("SELECT {group_by_column}, SUM({var1}) FROM {var} GROUP BY {group_by_column}".format(group_by_column=group_by_column,var1=var1,var=var))
+    else:
+        print("Invalid column name.")
+        query = ""
+
+# Execute the query and print the results
+    if query:
+        cursor.execute(query)
+        results = cursor.fetchall()
+        for row in results:
+            result.append(row)
+    return result
     
