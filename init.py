@@ -75,11 +75,16 @@ def selectTables():
             ans.append(data(table_name, column_dict))
     return jsonify(ans)
      # now selected_tables contains the key with value of tables which is selected by user.
-   
-@app.route('/api/getData',methods=['GET',"POST"])
+
+@app.route('/api/getReport',methods=['GET'])
+def getRepot():
+    return ("in progress!!")
+@app.route('/api/getData',methods=["POST"])
 def getData():
+    payloadData={}
     _req=request.json
     tableName=_req['tableName']
+    payloadData["tableName"]=tableName
     cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name = %s", (tableName,))
 
 # Fetch all the rows of the query result
@@ -92,12 +97,12 @@ def getData():
     for key in column_dict:
         value =_req[key].format(key)
         column_dict[key] = value
+        payloadData[key]=value
     
     select_stmt = "SELECT "
     column_names = [key for key in column_dict.keys() if column_dict[key]]
     select_stmt += ", ".join(column_names)
     select_stmt += " FROM " + tableName
-
     conditions = _req.get("conditions")
     if conditions:
         for condition in conditions:
@@ -107,10 +112,40 @@ def getData():
             values = condition.get("values")
             low = condition.get("low")
             high = condition.get("high")
-
+            result = None
+            ans1 = curd.getDataType(tableName, inputColumn)
+            for col in ans1:
+                result = col['data_type']
+                break
+            print("data type is----->>>>")
+            print(result)
             if logicalOpe:
                     if logicalOpe=="AND":
-                        if operator=="IN":
+                        if operator == "Not Ends With":
+                            select_stmt += " AND {} NOT LIKE '%{}'".format(inputColumn, "".join(values))
+                        elif operator == "Not Starts With":
+                            select_stmt += " AND {} NOT LIKE '{}%'".format(inputColumn, "".join(values))
+                        elif operator == "Not LIKE":
+                            select_stmt += " AND {} NOT LIKE '%{}%'".format(inputColumn, "".join(values))
+                        elif operator == "Ends with":
+                            select_stmt += " AND {} LIKE '%{}'".format(inputColumn, "".join(values))
+                        elif operator == "Starts with":
+                            select_stmt += " AND {} LIKE '{}%'".format(inputColumn, "".join(values))
+                        elif operator == "LIKE":
+                            select_stmt += " AND {} LIKE '%{}%'".format(inputColumn, "".join(values))
+                        elif operator=="=": 
+                            select_stmt+=" AND {} = {}".format(inputColumn, ", ".join(values))
+                        elif operator=="!=":
+                            select_stmt+=" AND {} != {}".format(inputColumn, ", ".join(values))
+                        elif operator=="<" and result!='character varying':
+                            select_stmt+=" AND {} < {}".format(inputColumn, ", ".join(values))
+                        elif operator==">" and result!='character varying':
+                            select_stmt+=" AND {} > {}".format(inputColumn, ", ".join(values))
+                        elif operator==">=" and result!='character varying':
+                            select_stmt+=" AND {} >= {}".format(inputColumn, ", ".join(values))
+                        elif operator=="<=" and result!='character varying':
+                            select_stmt+=" AND {} <= {}".format(inputColumn, ", ".join(values))
+                        elif operator=="IN":
                             select_stmt += " AND {} IN ({})".format(inputColumn, ", ".join(values))
                         elif operator=="BETWEEN":
                             select_stmt += " AND {} BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
@@ -119,7 +154,31 @@ def getData():
                         elif operator=="NOT BETWEEN":
                             select_stmt += " AND {} NOT BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
                     elif logicalOpe=="OR":
-                        if operator=="IN":
+                        if operator == "Not Ends With":
+                            select_stmt += " AND {} NOT LIKE '%{}'".format(inputColumn, "".join(values))
+                        elif operator == "Not Starts With":
+                            select_stmt += " AND {} NOT LIKE '{}%'".format(inputColumn, "".join(values))
+                        elif operator == "Not LIKE":
+                            select_stmt += " AND {} NOT LIKE '%{}%'".format(inputColumn, "".join(values))
+                        elif operator == "Ends with":
+                            select_stmt += " AND {} LIKE '%{}'".format(inputColumn, "".join(values))
+                        elif operator == "Starts with":
+                            select_stmt += " AND {} LIKE '{}%'".format(inputColumn, "".join(values))
+                        elif operator == "LIKE":
+                            select_stmt += " AND {} LIKE '%{}%'".format(inputColumn, "".join(values))
+                        elif operator=="=":
+                            select_stmt+=" AND {} = {}".format(inputColumn, ", ".join(values))
+                        elif operator=="!=":
+                            select_stmt+=" AND {} != {}".format(inputColumn, ", ".join(values))
+                        elif operator=="<" and result!='character varying':
+                            select_stmt+=" AND {} < {}".format(inputColumn, ", ".join(values))
+                        elif operator==">" and result!='character varying':
+                            select_stmt+=" AND {} > {}".format(inputColumn, ", ".join(values))
+                        elif operator==">=" and result!='character varying':
+                            select_stmt+=" AND {} >= {}".format(inputColumn, ", ".join(values))
+                        elif operator=="<=" and result!='character varying':
+                            select_stmt+=" AND {} <= {}".format(inputColumn, ", ".join(values))
+                        elif operator=="IN":
                             select_stmt += " OR {} IN ({})".format(inputColumn, ", ".join(values))
                         elif operator=="BETWEEN":
                             select_stmt += " AND {} BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
@@ -128,7 +187,31 @@ def getData():
                         elif operator=="NOT BETWEEN":
                             select_stmt += " AND {} NOT BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
                     elif logicalOpe=="NOT":
-                        if operator=="IN":
+                        if operator == "Not Ends With":
+                            select_stmt += " AND {} NOT LIKE '%{}'".format(inputColumn, "".join(values))
+                        elif operator == "Not Starts With":
+                            select_stmt += " AND {} NOT LIKE '{}%'".format(inputColumn, "".join(values))
+                        elif operator == "Not LIKE":
+                            select_stmt += " AND {} NOT LIKE '%{}%'".format(inputColumn, "".join(values))
+                        elif operator == "Ends with":
+                            select_stmt += " AND {} LIKE '%{}'".format(inputColumn, "".join(values))
+                        elif operator == "Starts with":
+                            select_stmt += " AND {} LIKE '{}%'".format(inputColumn, "".join(values))
+                        elif operator == "LIKE":
+                            select_stmt += " AND {} LIKE '%{}%'".format(inputColumn, "".join(values))
+                        elif operator=="=":
+                            select_stmt+=" AND {} = {}".format(inputColumn, ", ".join(values))
+                        elif operator=="!=":
+                            select_stmt+=" AND {} != {}".format(inputColumn, ", ".join(values))
+                        elif operator=="<" and result!='character varying':
+                            select_stmt+=" AND {} < {}".format(inputColumn, ", ".join(values))
+                        elif operator==">" and result!='character varying':
+                            select_stmt+=" AND {} > {}".format(inputColumn, ", ".join(values))
+                        elif operator==">=" and result!='character varying':
+                            select_stmt+=" AND {} >= {}".format(inputColumn, ", ".join(values))
+                        elif operator=="<=" and result!='character varying':
+                            select_stmt+=" AND {} <= {}".format(inputColumn, ", ".join(values))
+                        elif operator=="IN":
                             select_stmt += " NOT {} IN ({})".format(inputColumn, ", ".join(values))
                         elif operator=="BETWEEN":
                             select_stmt += " AND {} BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
@@ -137,7 +220,31 @@ def getData():
                         elif operator=="NOT BETWEEN":
                             select_stmt += " AND {} NOT BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
             else:
-                if operator == "IN":
+                if operator == "Not Ends With":
+                    select_stmt += " WHERE {} NOT LIKE '%{}'".format(inputColumn, "".join(values))
+                elif operator == "Not Starts With":
+                    select_stmt += " WHERE {} NOT LIKE '{}%'".format(inputColumn, "".join(values))
+                elif operator == "Not LIKE":
+                    select_stmt += " WHERE {} NOT LIKE '%{}%'".format(inputColumn, "".join(values))
+                elif operator == "Ends with":
+                    select_stmt += " WHERE {} LIKE '%{}'".format(inputColumn, "".join(values))
+                elif operator == "Starts with":
+                    select_stmt += " WHERE {} LIKE '{}%'".format(inputColumn, "".join(values))
+                elif operator == "LIKE":
+                    select_stmt += " WHERE {} LIKE '%{}%'".format(inputColumn, "".join(values))
+                elif operator=="=":
+                    select_stmt+=" WHERE {} = {}".format(inputColumn, ", ".join(values))
+                elif operator=="!=":
+                    select_stmt+=" WHERE {} != {}".format(inputColumn, ", ".join(values))
+                elif operator=="<" and result!='character varying':
+                    select_stmt+=" WHERE {} < {}".format(inputColumn, ", ".join(values))
+                elif operator==">" and result!='character varying':
+                    select_stmt+=" WHERE {} > {}".format(inputColumn, ", ".join(values))
+                elif operator==">=" and result!='character varying':
+                    select_stmt+=" WHERE {} >= {}".format(inputColumn, ", ".join(values))
+                elif operator=="<=" and result!='character varying':
+                    select_stmt+=" WHERE {} <= {}".format(inputColumn, ", ".join(values))
+                elif operator == "IN":
                     select_stmt += " WHERE {} IN ({})".format(inputColumn, ", ".join(values))
                 elif operator == "BETWEEN":
                     select_stmt += " WHERE {} BETWEEN {} AND {}".format(inputColumn, low, high)
@@ -146,6 +253,8 @@ def getData():
                 elif operator == "NOT BETWEEN":
                     select_stmt += " WHERE {} NOT BETWEEN {} AND {}".format(inputColumn, low, high)
     print(select_stmt)
+    payloadData["conditions"]=conditions
+    print(payloadData)
     # Execute the SELECT statement and fetch the results
     ans=curd.dbTransactionSelect(select_stmt)
     return jsonify(ans)
