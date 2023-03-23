@@ -26,7 +26,7 @@ def showTables():
 @app.route('/api/getColumnsOfTable',methods=['POST'])
 def getColumnsOfTable():
     _req=request.json
-    tableName=_req['tableName']
+    tableName=_req['table_name']
     query = "SELECT column_name FROM information_schema.columns WHERE table_name = '{}';".format(tableName)
     result=curd.dbTransactionSelect(query)
     return jsonify(result)
@@ -60,15 +60,32 @@ def selectTables():
     for table in selected_tables:
         table_name = table.get("name")
         if table_name:
+            select_stmt = "SELECT "
             column_dict = table.get("columnNames") # fetch column_dict based on selected table
-            listOfColumns = []
+            # listOfColumns = []
             for obj in column_dict:
                 value = obj.get("column_name")
-                listOfColumns.append(value)
-            select_stmt = "SELECT "
-            column_names = listOfColumns
-            select_stmt += ", ".join(column_names)
+                fun=obj.get("column_fun")
+                if fun:
+                    if fun == "sum":
+                       select_stmt += "sum({}), ".format("".join(value))
+                    elif fun == "avg":
+                        select_stmt += "avg({}), ".format("".join(value))
+                    elif fun == "max":
+                        select_stmt += "max({}), ".format("".join(value))
+                    elif fun == "min":
+                        select_stmt += "min({}), ".format("".join(value))
+                    elif fun == "count":
+                        select_stmt += "count({}), ".format("".join(value))
+                else:
+                    select_stmt += "{}, ".format("".join(value))
+                    
+            select_stmt = select_stmt.rstrip(", ") # remove trailing comma
+                # listOfColumns.append(value)
+            # column_names = listOfColumns
+            # select_stmt += ", ".join(column_names)
             select_stmt += " FROM " + table_name
+            
             conditions = table.get("conditions")
             # do something with listOfColumns and conditions
             if conditions:
@@ -220,6 +237,13 @@ def selectTables():
                             select_stmt += " WHERE {} NOT IN ({})".format(inputColumn, ", ".join(values))
                         elif operator == "NOT BETWEEN":
                             select_stmt += " WHERE {} NOT BETWEEN {} AND {}".format(inputColumn, low, high)
+            group=_req.get("groupBy")
+            listOfGroup=[]
+            for obj in group:
+                value = obj.get("groupColumn")
+                listOfGroup.append(value)
+            select_stmt+=" GROUP BY "
+            select_stmt += ", ".join(listOfGroup) 
             result2=curd.dbTransactionSelect(select_stmt)
             print(select_stmt)
             ans.append(result2)
