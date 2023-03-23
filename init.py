@@ -26,9 +26,12 @@ def showTables():
 @app.route('/api/getColumnsOfTable',methods=['POST'])
 def getColumnsOfTable():
     _req=request.json
-    tableName=_req['table_name']
-    query = "SELECT column_name FROM information_schema.columns WHERE table_name = '{}';".format(tableName)
-    result=curd.dbTransactionSelect(query)
+    selected_tables = _req.get("table_name")
+    for table in selected_tables:
+        table_name = table.get("table")
+        if table_name:
+            query = "SELECT column_name FROM information_schema.columns WHERE table_name = '{}';".format(table_name)
+            result=curd.dbTransactionSelect(query)
     return jsonify(result)
 
 def data(tableName,listOfColumns,conditions):
@@ -237,7 +240,8 @@ def selectTables():
                             select_stmt += " WHERE {} NOT IN ({})".format(inputColumn, ", ".join(values))
                         elif operator == "NOT BETWEEN":
                             select_stmt += " WHERE {} NOT BETWEEN {} AND {}".format(inputColumn, low, high)
-            group=_req.get("groupBy")
+            print(_req)
+            group=table.get("groupBy")
             listOfGroup=[]
             for obj in group:
                 value = obj.get("groupColumn")
