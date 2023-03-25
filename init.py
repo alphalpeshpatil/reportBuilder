@@ -59,30 +59,53 @@ def data(tableName,listOfColumns,conditions):
 def selectTables():
     _req = request.json
     ans = []
+    flag=0
     selected_tables = _req.get("tables")
     for table in selected_tables:
         table_name = table.get("name")
         if table_name:
             select_stmt = "SELECT "
             column_dict = table.get("columnNames") # fetch column_dict based on selected table
-            # listOfColumns = []
+            groupByList=[]
             for obj in column_dict:
                 value = obj.get("column_name")
                 fun=obj.get("column_fun")
                 if fun:
                     if fun == "sum":
-                       select_stmt += "sum({}), ".format("".join(value))
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "sum({}), ".format("".join(value))
                     elif fun == "avg":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
                         select_stmt += "avg({}), ".format("".join(value))
                     elif fun == "max":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
                         select_stmt += "max({}), ".format("".join(value))
                     elif fun == "min":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
                         select_stmt += "min({}), ".format("".join(value))
                     elif fun == "count":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
                         select_stmt += "count({}), ".format("".join(value))
                 else:
+                    tempDict={}
+                    tempDict["groupColumn"]=value
+                    groupByList.append(tempDict)
                     select_stmt += "{}, ".format("".join(value))
-                    
             select_stmt = select_stmt.rstrip(", ") # remove trailing comma
                 # listOfColumns.append(value)
             # column_names = listOfColumns
@@ -108,146 +131,17 @@ def selectTables():
                         print("data type is----->>>>")
                         print(result)
                     if logicalOpe:
-                        if logicalOpe=="AND":
-                            if operator == "Not Ends With":
-                                select_stmt += " AND {} NOT LIKE '%{}'".format(inputColumn, "".join(values))
-                            elif operator == "Not Starts With":
-                                select_stmt += " AND {} NOT LIKE '{}%'".format(inputColumn, "".join(values))
-                            elif operator == "Not LIKE":
-                                select_stmt += " AND {} NOT LIKE '%{}%'".format(inputColumn, "".join(values))
-                            elif operator == "Ends with":
-                                select_stmt += " AND {} LIKE '%{}'".format(inputColumn, "".join(values))
-                            elif operator == "Starts with":
-                                select_stmt += " AND {} LIKE '{}%'".format(inputColumn, "".join(values))
-                            elif operator == "LIKE":
-                                select_stmt += " AND {} LIKE '%{}%'".format(inputColumn, "".join(values))
-                            elif operator=="=": 
-                                select_stmt+=" AND {} = {}".format(inputColumn, ", ".join(values))
-                            elif operator=="!=":
-                                select_stmt+=" AND {} != {}".format(inputColumn, ", ".join(values))
-                            elif operator=="<" and result!='character varying':
-                                select_stmt+=" AND {} < {}".format(inputColumn, ", ".join(values))
-                            elif operator==">" and result!='character varying':
-                                select_stmt+=" AND {} > {}".format(inputColumn, ", ".join(values))
-                            elif operator==">=" and result!='character varying':
-                                select_stmt+=" AND {} >= {}".format(inputColumn, ", ".join(values))
-                            elif operator=="<=" and result!='character varying':
-                                select_stmt+=" AND {} <= {}".format(inputColumn, ", ".join(values))
-                            elif operator=="IN":
-                                select_stmt += " AND {} IN ({})".format(inputColumn, ", ".join(values))
-                            elif operator=="BETWEEN":
-                                select_stmt += " AND {} BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
-                            elif operator=="NOT IN":
-                                select_stmt += " AND {} NOT IN ({})".format(inputColumn, ", ".join(value))
-                            elif operator=="NOT BETWEEN":
-                                select_stmt += " AND {} NOT BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
-                        elif logicalOpe=="OR":
-                            if operator == "Not Ends With":
-                                select_stmt += " AND {} NOT LIKE '%{}'".format(inputColumn, "".join(values))
-                            elif operator == "Not Starts With":
-                                select_stmt += " AND {} NOT LIKE '{}%'".format(inputColumn, "".join(values))
-                            elif operator == "Not LIKE":
-                                select_stmt += " AND {} NOT LIKE '%{}%'".format(inputColumn, "".join(values))
-                            elif operator == "Ends with":
-                                select_stmt += " AND {} LIKE '%{}'".format(inputColumn, "".join(values))
-                            elif operator == "Starts with":
-                                select_stmt += " AND {} LIKE '{}%'".format(inputColumn, "".join(values))
-                            elif operator == "LIKE":
-                                select_stmt += " AND {} LIKE '%{}%'".format(inputColumn, "".join(values))
-                            elif operator=="=":
-                                select_stmt+=" AND {} = {}".format(inputColumn, ", ".join(values))
-                            elif operator=="!=":
-                                select_stmt+=" AND {} != {}".format(inputColumn, ", ".join(values))
-                            elif operator=="<" and result!='character varying':
-                                select_stmt+=" AND {} < {}".format(inputColumn, ", ".join(values))
-                            elif operator==">" and result!='character varying':
-                                select_stmt+=" AND {} > {}".format(inputColumn, ", ".join(values))
-                            elif operator==">=" and result!='character varying':
-                                select_stmt+=" AND {} >= {}".format(inputColumn, ", ".join(values))
-                            elif operator=="<=" and result!='character varying':
-                                select_stmt+=" AND {} <= {}".format(inputColumn, ", ".join(values))
-                            elif operator=="IN":
-                                select_stmt += " OR {} IN ({})".format(inputColumn, ", ".join(values))
-                            elif operator=="BETWEEN":
-                                select_stmt += " AND {} BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
-                            elif operator=="NOT IN":
-                                select_stmt += " OR {} NOT IN ({})".format(inputColumn, ", ".join(value))
-                            elif operator=="NOT BETWEEN":
-                                select_stmt += " AND {} NOT BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
-                        elif logicalOpe=="NOT":
-                            if operator == "Not Ends With":
-                                select_stmt += " AND {} NOT LIKE '%{}'".format(inputColumn, "".join(values))
-                            elif operator == "Not Starts With":
-                                select_stmt += " AND {} NOT LIKE '{}%'".format(inputColumn, "".join(values))
-                            elif operator == "Not LIKE":
-                                select_stmt += " AND {} NOT LIKE '%{}%'".format(inputColumn, "".join(values))
-                            elif operator == "Ends with":
-                                select_stmt += " AND {} LIKE '%{}'".format(inputColumn, "".join(values))
-                            elif operator == "Starts with":
-                                select_stmt += " AND {} LIKE '{}%'".format(inputColumn, "".join(values))
-                            elif operator == "LIKE":
-                                select_stmt += " AND {} LIKE '%{}%'".format(inputColumn, "".join(values))
-                            elif operator=="=":
-                                select_stmt+=" AND {} = {}".format(inputColumn, ", ".join(values))
-                            elif operator=="!=":
-                                select_stmt+=" AND {} != {}".format(inputColumn, ", ".join(values))
-                            elif operator=="<" and result!='character varying':
-                                select_stmt+=" AND {} < {}".format(inputColumn, ", ".join(values))
-                            elif operator==">" and result!='character varying':
-                                select_stmt+=" AND {} > {}".format(inputColumn, ", ".join(values))
-                            elif operator==">=" and result!='character varying':
-                                select_stmt+=" AND {} >= {}".format(inputColumn, ", ".join(values))
-                            elif operator=="<=" and result!='character varying':
-                                select_stmt+=" AND {} <= {}".format(inputColumn, ", ".join(values))
-                            elif operator=="IN":
-                                select_stmt += " NOT {} IN ({})".format(inputColumn, ", ".join(values))
-                            elif operator=="BETWEEN":
-                                select_stmt += " AND {} BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
-                            elif operator=="NOT IN":
-                                select_stmt += " NOT {} NOT IN ({})".format(inputColumn, ", ".join(value))
-                            elif operator=="NOT BETWEEN":
-                                select_stmt += " AND {} NOT BETWEEN {} AND {}".format(inputColumn, ", ".join(low),", ".joins(high))
+                        select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
                     else:
-                        if operator == "Not Ends With":
-                            select_stmt += " WHERE {} NOT LIKE '%{}'".format(inputColumn, "".join(values))
-                        elif operator == "Not Starts With":
-                            select_stmt += " WHERE {} NOT LIKE '{}%'".format(inputColumn, "".join(values))
-                        elif operator == "Not LIKE":
-                            select_stmt += " WHERE {} NOT LIKE '%{}%'".format(inputColumn, "".join(values))
-                        elif operator == "Ends with":
-                            select_stmt += " WHERE {} LIKE '%{}'".format(inputColumn, "".join(values))
-                        elif operator == "Starts with":
-                            select_stmt += " WHERE {} LIKE '{}%'".format(inputColumn, "".join(values))
-                        elif operator == "LIKE":
-                            select_stmt += " WHERE {} LIKE '%{}%'".format(inputColumn, "".join(values))
-                        elif operator=="=":
-                            select_stmt+=" WHERE {} = {}".format(inputColumn, ", ".join(values))
-                        elif operator=="!=":
-                            select_stmt+=" WHERE {} != {}".format(inputColumn, ", ".join(values))
-                        elif operator=="<" and result!='character varying':
-                            select_stmt+=" WHERE {} < {}".format(inputColumn, ", ".join(values))
-                        elif operator==">" and result!='character varying':
-                            select_stmt+=" WHERE {} > {}".format(inputColumn, ", ".join(values))
-                        elif operator==">=" and result!='character varying':
-                            select_stmt+=" WHERE {} >= {}".format(inputColumn, ", ".join(values))
-                        elif operator=="<=" and result!='character varying':
-                            select_stmt+=" WHERE {} <= {}".format(inputColumn, ", ".join(values))
-                        elif operator == "IN":
-                            select_stmt += " WHERE {} IN ({})".format(inputColumn, ", ".join(values))
-                        elif operator == "BETWEEN":
-                            select_stmt += " WHERE {} BETWEEN {} AND {}".format(inputColumn, low, high)
-                        elif operator == "NOT IN":
-                            select_stmt += " WHERE {} NOT IN ({})".format(inputColumn, ", ".join(values))
-                        elif operator == "NOT BETWEEN":
-                            select_stmt += " WHERE {} NOT BETWEEN {} AND {}".format(inputColumn, low, high)
-            print(_req)
-            group=table.get("groupBy")
+                        select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
             listOfGroup=[]
-            for obj in group:
-                value = obj.get("groupColumn")
-                listOfGroup.append(value)
-            select_stmt+=" GROUP BY "
-            select_stmt += ", ".join(listOfGroup) 
+            if flag==True:
+                for obj in groupByList:
+                    value = obj.get("groupColumn")
+                    listOfGroup.append(value)
+                select_stmt+=" GROUP BY "
+                select_stmt += ", ".join(listOfGroup) 
+                flag=0
             result2=curd.dbTransactionSelect(select_stmt)
             print(select_stmt)
             ans.append(result2)
