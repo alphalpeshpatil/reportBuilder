@@ -23,16 +23,119 @@ def showTables():
     result=curd.dbTransactionSelect(query)
     return jsonify(result)
 
-@app.route('/api/getColumnsOfTable',methods=['POST'])
+# @app.route('/api/getColumnsOfTable',methods=['POST'])
+# def getColumnsOfTable():
+#     _req=request.json
+#     selected_tables = _req.get("table_name")
+#     for table in selected_tables:
+#         table_name = table.get("table")
+#         if table_name:
+#             query = "SELECT column_name FROM information_schema.columns WHERE table_name = '{}';".format(table_name)
+#             result=curd.dbTransactionSelect(query)
+#     return jsonify(result)
+
+@app.route('/api/getColumnsOfTable', methods=['POST'])
 def getColumnsOfTable():
-    _req=request.json
+    _req = request.json
     selected_tables = _req.get("table_name")
+    result = []
     for table in selected_tables:
         table_name = table.get("table")
         if table_name:
             query = "SELECT column_name FROM information_schema.columns WHERE table_name = '{}';".format(table_name)
-            result=curd.dbTransactionSelect(query)
+            columns = curd.dbTransactionSelect(query)
+            if columns:
+                for col in columns:
+                    col["column_name"] = table_name + "." + col["column_name"] #concatinated the column name...
+                result.append(columns)
     return jsonify(result)
+
+@app.route('/api/showConditionsList',methods=["GET"])
+def showConditionList():
+    result=[]
+    tempdict={}
+    tempdict["condition"]="Not Ends With"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="Not Starts With"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="Not LIKE"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="Ends with"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="Starts with"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="LIKE"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="="
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="!="
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]=">"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="<"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]=">="
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="<="
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="IN"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="BETWEEN"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="NOT IN"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    tempdict["condition"]="NOT BETWEEN"
+    result.append(tempdict.copy())  # copy the dictionary before appending to the list
+    tempdict.clear()
+    return jsonify(result)
+
+@app.route('/api/showGroupingFuncions',methods=["GET"])
+def showGroupingFuncions():
+    result=[]
+    tempdict={}
+    tempdict["groupingFunction"]="sum"
+    result.append(tempdict.copy()) 
+    tempdict.clear()
+    tempdict["condition"]="avg"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    tempdict["condition"]="max"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    tempdict["condition"]="min"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    tempdict["condition"]="count"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    return result
+    
+@app.route('/api/showOrderByClause',methods=["GET"])
+def showOrderByClause():
+    result=[]
+    tempdict={}
+    tempdict["groupingFunction"]="ascending"
+    result.append(tempdict.copy()) 
+    tempdict.clear()
+    tempdict["condition"]="descending"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    return result
 
 def data(tableName,listOfColumns,conditions):
     select_stmt = "SELECT "
@@ -60,17 +163,51 @@ def selectTables():
     _req = request.json
     ans = []
     flag=0
+    reportName=_req['reportName']
     selected_tables = _req.get("tables")
     for table in selected_tables:
         table_name = table.get("name")
         if table_name:
             select_stmt = "SELECT "
             column_dict = table.get("columnNames") # fetch column_dict based on selected table
+            order_dict=table.get("order_by")
             groupByList=[]
             for obj in column_dict:
+                column_value=obj.get("column")
                 value = obj.get("column_name")
                 fun=obj.get("column_fun")
-                if fun:
+                if fun and column_value:
+                    if fun == "sum":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "sum({}),{}, ".format(column_value, "".join(value))
+                    elif fun == "avg":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "avg({}),{}, ".format(column_value, "".join(value))
+                    elif fun == "max":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "max({}),{}, ".format(column_value, "".join(value))
+                    elif fun == "min":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "min({}),{}, ".format(column_value, "".join(value))
+                    elif fun == "count":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "count({}),{}, ".format(column_value, "".join(value))
+                elif fun:
                     if fun == "sum":
                         flag=True
                         tempDict={}
@@ -135,6 +272,7 @@ def selectTables():
                     else:
                         select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
             listOfGroup=[]
+            listofOrder=[]
             if flag==True:
                 for obj in groupByList:
                     value = obj.get("groupColumn")
@@ -142,10 +280,38 @@ def selectTables():
                 select_stmt+=" GROUP BY "
                 select_stmt += ", ".join(listOfGroup) 
                 flag=0
+            # yaha having clause ayega....
+            if order_dict:
+                select_stmt+=" ORDER BY "
+                for obj in order_dict:
+                    tempDict={}
+                    column=obj.get("column")
+                    order=obj.get("order")
+                    if order=="asc":
+                        select_stmt += "{}, ".format("".join(column))
+                    elif order=="desc":
+                        select_stmt += "{} DESC, ".format("".join(column))
+            select_stmt = select_stmt.rstrip(", ") # remove trailing comma
             result2=curd.dbTransactionSelect(select_stmt)
             print(select_stmt)
             ans.append(result2)
-    return jsonify(ans)
+    checkQuery=("SELECT reportname FROM report1 WHERE reportname = '{}'".format(reportName))
+    resultOfCheck=curd.dbTransactionSelect(checkQuery)
+    if resultOfCheck !="No data Found":
+        return jsonify("report already exist")
+    else:
+        try:
+            query = "INSERT INTO report1 (reportname, querystr) VALUES ('"+str(reportName)+"',$$"+select_stmt+"$$)"
+            print(query)
+            # sql_where=(reportName,select_stmt)
+            # cursor.execute(sql,sql_where)
+            # connection.commit()
+            # Execute the SELECT statement and fetch the results
+            curd.dbTransactionIUD(query)
+        except Exception as error:
+            print(error)
+        return jsonify(ans)
+    
      # now selected_tables contains the key with value of tables which is selected by user.
 
 @app.route('/api/getReport',methods=['POST'])
@@ -162,7 +328,7 @@ def getRepot():
         result2=curd.dbTransactionSelect(select_stmt)
         return jsonify(result2)
 
-@app.route('/api/getData',methods=["POST"])
+@app.route('/api/getData',methods=["POST"])#this is only for single table selection
 def getData():
     _req=request.json
     reportName=_req['reportName']
