@@ -136,6 +136,42 @@ def condition(inputColumn,values,low,high,value,logicalOpe,operator,result):
             select_stmt += " WHERE {} NOT BETWEEN {} AND {}".format(inputColumn, low, high)
     return str(select_stmt)
 
+def specialCondition(inputColumn,values,low,high,value,logicalOpe,operator,result):
+    if operator == "Not Ends With":
+        select_stmt += " AND {} NOT LIKE '%{}'".format(inputColumn, "".join(values))
+    elif operator == "Not Starts With":
+        select_stmt += " AND {} NOT LIKE '{}%'".format(inputColumn, "".join(values))
+    elif operator == "Not LIKE":
+        select_stmt += " AND {} NOT LIKE '%{}%'".format(inputColumn, "".join(values))
+    elif operator == "Ends with":
+        select_stmt += " AND {} LIKE '%{}'".format(inputColumn, "".join(values))
+    elif operator == "Starts with":
+        select_stmt += " AND {} LIKE '{}%'".format(inputColumn, "".join(values))
+    elif operator == "LIKE":
+        select_stmt += " AND {} LIKE '%{}%'".format(inputColumn, "".join(values))
+    elif operator=="=":
+        select_stmt+=" AND {} = {}".format(inputColumn, ", ".join(values))
+    elif operator=="!=":
+        select_stmt+=" AND {} != {}".format(inputColumn, ", ".join(values))
+    elif operator=="<" and result!='character varying':
+        select_stmt+=" AND {} < {}".format(inputColumn, ", ".join(values))
+    elif operator==">" and result!='character varying':
+        select_stmt+=" AND {} > {}".format(inputColumn, ", ".join(values))
+    elif operator==">=" and result!='character varying':
+        select_stmt+=" AND {} >= {}".format(inputColumn, ", ".join(values))
+    elif operator=="<=" and result!='character varying':
+        select_stmt+=" AND {} <= {}".format(inputColumn, ", ".join(values))
+    elif operator == "IN":
+        select_stmt += " AND {} IN ({})".format(inputColumn, ", ".join(values))
+    elif operator == "BETWEEN":
+        select_stmt += " AND {} BETWEEN {} AND {}".format(inputColumn, low, high)
+    elif operator == "NOT IN":
+        select_stmt += " AND {} NOT IN ({})".format(inputColumn, ", ".join(values))
+    elif operator == "NOT BETWEEN":
+        select_stmt += " AND {} NOT BETWEEN {} AND {}".format(inputColumn, low, high)
+    return str(select_stmt)
+
+
 def getDataType(tableName,columnName):
     connection = psycopg2.connect(user="postgres",password="root",host="localhost",port="5433",database="postgres")
     try:
