@@ -138,7 +138,37 @@ def showOrderByClause():
     tempdict["groupingFunction"]="ascending"
     result.append(tempdict.copy()) 
     tempdict.clear()
-    tempdict["condition"]="descending"
+    tempdict["groupingFunction"]="descending"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    return result
+
+@app.route('/api/showMergeConditions',methods=["GET"])
+def showMergeConditions():
+    result=[]
+    tempdict={}
+    tempdict["mergeCondition"]="inner join"
+    result.append(tempdict.copy()) 
+    tempdict.clear()
+    tempdict["mergeCondition"]="left outer join"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    tempdict["mergeCondition"]="right outer join"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    tempdict["mergeCondition"]="full outer join"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    tempdict["mergeCondition"]="Non equi join"  # isme hum only "join" use karte he or isme "=" nahi ">","<"...ye sub use karte he so update left..
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    tempdict["mergeCondition"]="cross join"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    tempdict["mergeCondition"]="natural join"
+    result.append(tempdict.copy())  
+    tempdict.clear()
+    tempdict["mergeCondition"]="self join"
     result.append(tempdict.copy())  
     tempdict.clear()
     return result
@@ -188,193 +218,185 @@ def check_common_columns(selected_tables, select_stmt):
 
     # Append the WHERE clause to the SELECT statement
     select_stmt += " " + where_clause
+    return select_stmt
+    # else:
+    #     return 0
 
-    if len(common_columns)==len(selected_tables)-1:
-        return select_stmt
-    else:
-        return 0
-
-@app.route('/api/selectMultipleTablesWithTheirColumns',methods=['GET','POST'])
-def selectTables():
-    _req = request.json
-    ans = []
-    flag=0
+# @app.route('/api/selectMultipleTablesWithTheirColumns',methods=['GET','POST'])
+# def selectTables():
+#     _req = request.json
+#     ans = []
+#     flag=0
     
-    # new code --------------------------------------------------
-    commonColumnsCheck=0
-    count=0
-    reportName=_req['reportName']
-    selected_tables = _req.get("tables")
-    tableList=[]
-    select_stmt = "SELECT "
-    for table in selected_tables:
-        table_name=table.get("name")
-        if table_name:
-            count=count+1
-            tableListColumns={}
-            
-            tableListColumns["name"]=table_name
-            tableListColumns["columnNames"]=table.get("columnNames")
-            tableList.append(tableListColumns)
-            
-            column_dict = table.get("columnNames") # fetch column_dict based on selected table
-            order_dict=table.get("order_by")
-            groupByList=[]
-            for obj in column_dict:
-                column_value=obj.get("column")
-                value = obj.get("column_name")
-                fun=obj.get("column_fun")
-                if fun and column_value:
-                    if fun == "sum":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "sum({}),{}, ".format(column_value, "".join(value))
-                    elif fun == "avg":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "avg({}),{}, ".format(column_value, "".join(value))
-                    elif fun == "max":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "max({}),{}, ".format(column_value, "".join(value))
-                    elif fun == "min":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "min({}),{}, ".format(column_value, "".join(value))
-                    elif fun == "count":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "count({}),{}, ".format(column_value, "".join(value))
-                elif fun:
-                    if fun == "sum":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "sum({}), ".format("".join(value))
-                    elif fun == "avg":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "avg({}), ".format("".join(value))
-                    elif fun == "max":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "max({}), ".format("".join(value))
-                    elif fun == "min":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "min({}), ".format("".join(value))
-                    elif fun == "count":
-                        flag=True
-                        tempDict={}
-                        tempDict["groupColumn"]=value
-                        groupByList.append(tempDict)
-                        select_stmt += "count({}), ".format("".join(value))
-                else:
-                    tempDict={}
-                    tempDict["groupColumn"]=value
-                    groupByList.append(tempDict)
-                    select_stmt += "{}, ".format("".join(value))
-            select_stmt = select_stmt.rstrip(", ") # remove trai
-            if len(tableList)==1:
-                select_stmt += " FROM {}".format("".join(table_name))
-            else: 
-                commonColumnsCheck=check_common_columns(tableList,select_stmt)
-                if commonColumnsCheck==0:
-                    return jsonify("Report can not be made as there are no common columns!!")
-                else:
-                    tabletemp=[]
-                    for table in tableList:
-                        tabletemp.append(table.get("name"))
-                    select_stmt += " FROM "
-                    select_stmt += "{}, ".format("".join(tabletemp,select_stmt))
-                    select_stmt+=commonColumnsCheck
-            conditions = table.get("conditions")
-            # do something with listOfColumns and conditions
-            if conditions:
-                for condition in conditions:
-                    logicalOpe = condition.get("logicalOpe")
-                    operator = condition.get("operator")
-                    inputColumn = condition.get("inputColumn")
-                    values = condition.get("values")
-                    low = condition.get("low")
-                    high = condition.get("high")
-                    result = None
-                    if operator:
-                        ans1 = curd.getDataType(table_name, inputColumn)
-                        for col in ans1:
-                            result = col['data_type']
-                            break
-                        print("data type is----->>>>")
-                        print(result)
-                    if logicalOpe:
-                        select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
-                    elif commonColumnsCheck!=0:
-                        select_stmt+=curd.specialCondition(inputColumn,values,low,high,value,logicalOpe,operator,result)
-                        commonColumnsCheck=0
-                    else:
-                        select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
-            listOfGroup=[]
-            listofOrder=[]
-            if flag==True:
-                for obj in groupByList:
-                    value = obj.get("groupColumn")
-                    listOfGroup.append(value)
-                select_stmt+=" GROUP BY "
-                select_stmt += ", ".join(listOfGroup) 
-                flag=0
-            # yaha having clause ayega....
-            if order_dict:
-                select_stmt+=" ORDER BY "
-                for obj in order_dict:
-                    tempDict={}
-                    column=obj.get("column")
-                    order=obj.get("order")
-                    if order=="asc":
-                        select_stmt += "{}, ".format("".join(column))
-                    elif order=="desc":
-                        select_stmt += "{} DESC, ".format("".join(column))
-            select_stmt = select_stmt.rstrip(", ") # remove trailing comma
-            result2=curd.dbTransactionSelect(select_stmt)
-            print(select_stmt)
-            ans.append(result2)
-    checkQuery=("SELECT reportname FROM report1 WHERE reportname = '{}'".format(reportName))
-    resultOfCheck=curd.dbTransactionSelect(checkQuery)
-    if resultOfCheck !="No data Found":
-        return jsonify("report already exist")
-    else:
-        try:
-            query = "INSERT INTO report1 (reportname, querystr) VALUES ('"+str(reportName)+"',$$"+select_stmt+"$$)"
-            print(query)
-            # sql_where=(reportName,select_stmt)
-            # cursor.execute(sql,sql_where)
-            # connection.commit()
-            # Execute the SELECT statement and fetch the results
-            curd.dbTransactionIUD(query)
-        except Exception as error:
-            print(error)
-        return jsonify(ans)
+#     # new code --------------------------------------------------
+#     commonColumnsCheck=0
+#     count=0
+#     reportName=_req['reportName']
+#     selected_tables = _req.get("tables")
+#     select_stmt = "SELECT "
+    # for table in selected_tables:
+    #     table_name=table.get("name")
+    #     if table_name:
+    #         count=count+1
+    #         column_dict = table.get("columnNames") # fetch column_dict based on selected table
+    #         order_dict=table.get("order_by")
+    #         groupByList=[]
+    #         for obj in column_dict:
+    #             column_value=obj.get("column")
+    #             value = obj.get("column_name")
+    #             fun=obj.get("column_fun")
+    #             if fun and column_value:
+    #                 if fun == "sum":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "sum({}),{}, ".format(column_value, "".join(value))
+    #                 elif fun == "avg":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "avg({}),{}, ".format(column_value, "".join(value))
+    #                 elif fun == "max":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "max({}),{}, ".format(column_value, "".join(value))
+    #                 elif fun == "min":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "min({}),{}, ".format(column_value, "".join(value))
+    #                 elif fun == "count":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "count({}),{}, ".format(column_value, "".join(value))
+    #             elif fun:
+    #                 if fun == "sum":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "sum({}), ".format("".join(value))
+    #                 elif fun == "avg":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "avg({}), ".format("".join(value))
+    #                 elif fun == "max":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "max({}), ".format("".join(value))
+    #                 elif fun == "min":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "min({}), ".format("".join(value))
+    #                 elif fun == "count":
+    #                     flag=True
+    #                     tempDict={}
+    #                     tempDict["groupColumn"]=value
+    #                     groupByList.append(tempDict)
+    #                     select_stmt += "count({}), ".format("".join(value))
+    #             else:
+    #                 tempDict={}
+    #                 tempDict["groupColumn"]=value
+    #                 groupByList.append(tempDict)
+    #                 select_stmt += "{}, ".format("".join(value))
+    #         select_stmt = select_stmt.rstrip(", ") # remove trai
+    #         if len(tableList)==1:
+    #             select_stmt += " FROM {}".format("".join(table_name))
+    #         else: 
+    #             commonColumnsCheck=check_common_columns(tableList,select_stmt)
+    #             if commonColumnsCheck==0:
+    #                 return jsonify("Report can not be made as there are no common columns!!")
+    #             else:
+    #                 tabletemp=[]
+    #                 for table in tableList:
+    #                     tabletemp.append(table.get("name"))
+    #                 select_stmt += " FROM "
+    #                 select_stmt += "{}, ".format("".join(tabletemp))
+    #                 select_stmt+=commonColumnsCheck
+    #         conditions = table.get("conditions")
+    #         # do something with listOfColumns and conditions
+    #         if conditions:
+    #             for condition in conditions:
+    #                 logicalOpe = condition.get("logicalOpe")
+    #                 operator = condition.get("operator")
+    #                 inputColumn = condition.get("inputColumn")
+    #                 values = condition.get("values")
+    #                 low = condition.get("low")
+    #                 high = condition.get("high")
+    #                 result = None
+    #                 if operator:
+    #                     ans1 = curd.getDataType(table_name, inputColumn)
+    #                     for col in ans1:
+    #                         result = col['data_type']
+    #                         break
+    #                     print("data type is----->>>>")
+    #                     print(result)
+    #                 if logicalOpe:
+    #                     select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
+    #                 elif commonColumnsCheck!=0:
+    #                     select_stmt+=curd.specialCondition(inputColumn,values,low,high,value,logicalOpe,operator,result)
+    #                     commonColumnsCheck=0
+    #                 else:
+    #                     select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
+    #         listOfGroup=[]
+    #         listofOrder=[]
+    #         if flag==True:
+    #             for obj in groupByList:
+    #                 value = obj.get("groupColumn")
+    #                 listOfGroup.append(value)
+    #             select_stmt+=" GROUP BY "
+    #             select_stmt += ", ".join(listOfGroup) 
+    #             flag=0
+    #         # yaha having clause ayega....
+    #         if order_dict:
+    #             select_stmt+=" ORDER BY "
+    #             for obj in order_dict:
+    #                 tempDict={}
+    #                 column=obj.get("column")
+    #                 order=obj.get("order")
+    #                 if order=="asc":
+    #                     select_stmt += "{}, ".format("".join(column))
+    #                 elif order=="desc":
+    #                     select_stmt += "{} DESC, ".format("".join(column))
+    #         select_stmt = select_stmt.rstrip(", ") # remove trailing comma
+    #         result2=curd.dbTransactionSelect(select_stmt)
+    #         print(select_stmt)
+    #         ans.append(result2)
+    # checkQuery=("SELECT reportname FROM report1 WHERE reportname = '{}'".format(reportName))
+    # resultOfCheck=curd.dbTransactionSelect(checkQuery)
+    # if resultOfCheck !="No data Found":
+    #     return jsonify("report already exist")
+    # else:
+    #     try:
+    #         query = "INSERT INTO report1 (reportname, querystr) VALUES ('"+str(reportName)+"',$$"+select_stmt+"$$)"
+    #         print(query)
+    #         # sql_where=(reportName,select_stmt)
+    #         # cursor.execute(sql,sql_where)
+    #         # connection.commit()
+    #         # Execute the SELECT statement and fetch the results
+    #         curd.dbTransactionIUD(query)
+    #     except Exception as error:
+    #         print(error)
+    #     return jsonify(ans)
 # new code --------------------------------------------------
-        
+    count=0
     for table in selected_tables:
         table_name = table.get("name")
         if table_name:
+            count=count+1
             select_stmt = "SELECT "
             column_dict = table.get("columnNames") # fetch column_dict based on selected table
             order_dict=table.get("order_by")
@@ -522,6 +544,271 @@ def selectTables():
         return jsonify(ans)
     
      # now selected_tables contains the key with value of tables which is selected by user.
+
+@app.route('/api/selectMultipleTablesWithTheirColumns',methods=['GET','POST'])
+def selectTables():
+    _req = request.json
+    ans = []
+    flag=0
+    reportName=_req['reportName']
+    selected_tables = _req.get("tables")
+    select_stmt = "SELECT "
+    tableNameList=[]
+    groupByList=[]
+    count=0
+    for table in selected_tables:
+        table_name = table.get("name")
+        if table_name:
+            tableNameList.append(table_name)
+            count=count+1
+            column_dict = table.get("columnNames") # fetch column_dict based on selected table
+            for obj in column_dict:
+                column_value=obj.get("column")
+                value = obj.get("column_name")
+                fun=obj.get("column_fun")
+                if fun and column_value:
+                    if fun == "sum":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "sum({}),{}, ".format(column_value, "".join(value))
+                    elif fun == "avg":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "avg({}),{}, ".format(column_value, "".join(value))
+                    elif fun == "max":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "max({}),{}, ".format(column_value, "".join(value))
+                    elif fun == "min":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "min({}),{}, ".format(column_value, "".join(value))
+                    elif fun == "count":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "count({}),{}, ".format(column_value, "".join(value))
+                elif fun:
+                    if fun == "sum":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "sum({}), ".format("".join(value))
+                    elif fun == "avg":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "avg({}), ".format("".join(value))
+                    elif fun == "max":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "max({}), ".format("".join(value))
+                    elif fun == "min":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "min({}), ".format("".join(value))
+                    elif fun == "count":
+                        flag=True
+                        tempDict={}
+                        tempDict["groupColumn"]=value
+                        groupByList.append(tempDict)
+                        select_stmt += "count({}), ".format("".join(value))
+                else:
+                    tempDict={}
+                    tempDict["groupColumn"]=value
+                    groupByList.append(tempDict)
+                    select_stmt += "{}, ".format("".join(value))
+            select_stmt = select_stmt.rstrip(" ") # remove trailing comma
+                # listOfColumns.append(value)
+            # column_names = listOfColumns
+            # select_stmt += ", ".join(column_names)
+    iter = 0
+    mergeCon = _req.get("merge")
+    if count > 1 and mergeCon is not None:
+        select_stmt = select_stmt.rstrip(", ") # remove trailing comma
+        if iter < len(tableNameList):
+            select_stmt += " FROM {}".format((tableNameList[iter]))
+            iter += 1
+        for merge in mergeCon:
+            if iter < len(tableNameList):
+                mergeType = merge.get("mergeType")
+                print("---------------------------")
+                print(mergeType)
+                select_stmt += " {} {}".format(mergeType, "".join(tableNameList[iter]))
+                mergeColumndict = merge.get("mergeConditions")
+                select_stmt += " ON "
+                for col in mergeColumndict:
+                    mergeCol1 = col.get("columnMerge1")
+                    mergeCol2 = col.get("columnMerge2")
+                    if mergeCol1.split(".")[1] == mergeCol2.split(".")[1]:
+                        select_stmt += "{}={} AND ".format(mergeCol1, "".join(mergeCol2))
+                    else:
+                        print("The column names are different")
+                select_stmt = select_stmt.rstrip("AND ") #remove trailing AND and space
+            iter += 1
+        conditions = _req.get("conditions")
+            # do something with listOfColumns and conditions
+        if conditions:
+            for condition in conditions:
+                logicalOpe = condition.get("logicalOpe")
+                operator = condition.get("operator")
+                inputColumn = condition.get("inputColumn")
+                values = condition.get("values")
+                low = condition.get("low")
+                high = condition.get("high")
+                result = None
+                if operator:
+                    ans1 = curd.getDataType(table_name, inputColumn)
+                    for col in ans1:
+                        result = col['data_type']
+                        break
+                    print("data type is----->>>>")
+                    print(result)
+                if logicalOpe:
+                    select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
+                else:
+                    select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
+        listOfGroup=[]
+        listofOrder=[]
+        if flag==True:
+            for obj in groupByList:
+                value = obj.get("groupColumn")
+                listOfGroup.append(value)
+            select_stmt+=" GROUP BY "
+            select_stmt += ", ".join(listOfGroup) 
+        # yaha having clause ayega....
+        listOfHaving=[]
+        if flag==True:
+            havingCon=_req.get("having")
+            if havingCon:
+                for aobj in havingCon:
+                    value=aobj.get("havingCondition")
+                    listOfHaving.append(value)
+                select_stmt+=" HAVING "
+                select_stmt+="AND ".join(listOfHaving)
+        select_stmt = select_stmt.rstrip("AND ")
+        order_dict=_req.get("order_by")
+        if order_dict:
+            select_stmt+=" ORDER BY "
+            for obj in order_dict:
+                tempDict={}
+                column=obj.get("column")
+                order=obj.get("order")
+                if order=="asc":
+                    select_stmt += "{} ASC ".format("".join(column))
+                elif order=="desc":
+                    select_stmt += "{} DESC, ".format("".join(column))
+        select_stmt = select_stmt.rstrip(", ") # remove trailing comma
+        result2=curd.dbTransactionSelect(select_stmt)
+        print(select_stmt)
+        ans.append(result2)
+        checkQuery=("SELECT reportname FROM report1 WHERE reportname = '{}'".format(reportName))
+        resultOfCheck=curd.dbTransactionSelect(checkQuery)
+        if resultOfCheck !="No data Found":
+            return jsonify("report already exist")
+        else:
+            try:
+                query = "INSERT INTO report1 (reportname, querystr) VALUES ('"+str(reportName)+"',$$"+select_stmt+"$$)"
+                print(query)
+                # sql_where=(reportName,select_stmt)
+                # cursor.execute(sql,sql_where)
+                # connection.commit()
+                # Execute the SELECT statement and fetch the results
+                curd.dbTransactionIUD(query)
+            except Exception as error:
+                print(error)
+            return jsonify(ans)
+    else:
+        select_stmt = select_stmt.rstrip(", ")
+        select_stmt += " FROM {} ".format((tableNameList[iter]))
+        conditions = _req.get("conditions")
+            # do something with listOfColumns and conditions
+        if conditions:
+            for condition in conditions:
+                logicalOpe = condition.get("logicalOpe")
+                operator = condition.get("operator")
+                inputColumn = condition.get("inputColumn")
+                values = condition.get("values")
+                low = condition.get("low")
+                high = condition.get("high")
+                result = None
+                if operator:
+                    ans1 = curd.getDataType(table_name, inputColumn)
+                    for col in ans1:
+                        result = col['data_type']
+                        break
+                    print("data type is----->>>>")
+                    print(result)
+                if logicalOpe:
+                    select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
+                else:
+                    select_stmt+=curd.condition(inputColumn,values,low,high,value,logicalOpe,operator,result)
+        listOfGroup=[]
+        listofOrder=[]
+        if flag==True:
+            for obj in groupByList:
+                value = obj.get("groupColumn")
+                listOfGroup.append(value)
+            select_stmt+=" GROUP BY "
+            select_stmt += ", ".join(listOfGroup) 
+        # yaha having clause ayega....
+        
+        listOfHaving=[]
+        if flag==True:
+            havingCon=_req.get("having")
+            if havingCon:
+                for aobj in havingCon:
+                    value=aobj.get("havingCondition")
+                    listOfHaving.append(value)
+                select_stmt+=" HAVING "
+                select_stmt+="AND ".join(listOfHaving)
+        select_stmt = select_stmt.rstrip("AND ")
+        order_dict=_req.get("order_by")
+        if order_dict:
+            select_stmt+=" ORDER BY "
+            for obj in order_dict:
+                tempDict={}
+                column=obj.get("column")
+                order=obj.get("order")
+                if order=="asc":
+                    select_stmt += "{} ASC ".format("".join(column))
+                elif order=="desc":
+                    select_stmt += "{} DESC, ".format("".join(column))
+        select_stmt = select_stmt.rstrip(", ") # remove trailing comma
+        result2=curd.dbTransactionSelect(select_stmt)
+        print(select_stmt)
+        ans.append(result2)
+        checkQuery=("SELECT reportname FROM report1 WHERE reportname = '{}'".format(reportName))
+        resultOfCheck=curd.dbTransactionSelect(checkQuery)
+        if resultOfCheck !="No data Found":
+            return jsonify("report already exist")
+        else:
+            try:
+                query = "INSERT INTO report1 (reportname, querystr) VALUES ('"+str(reportName)+"',$$"+select_stmt+"$$)"
+                print(query)
+                # sql_where=(reportName,select_stmt)
+                # cursor.execute(sql,sql_where)
+                # connection.commit()
+                # Execute the SELECT statement and fetch the results
+                curd.dbTransactionIUD(query)
+            except Exception as error:
+                print(error)
+            return jsonify(ans)
 
 @app.route('/api/getReport',methods=['POST'])
 def getRepot():
